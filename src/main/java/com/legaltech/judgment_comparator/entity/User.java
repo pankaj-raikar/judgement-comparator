@@ -3,16 +3,24 @@ package com.legaltech.judgment_comparator.entity;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import lombok.*;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
+
+import java.util.Collection;
+import java.util.List;
 
 /**
- * Entity class for User Management
+ * User entity implementing Spring Security UserDetails
+ * This allows Spring Security to manage authentication
  */
 @Entity
 @Table(name = "users")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class User {
+@Builder
+public class User implements UserDetails {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -33,13 +41,9 @@ public class User {
     @Column(nullable = false)
     private String password;
 
-    /**
-     * FIX: Use @Enumerated(EnumType.STRING) for H2 compatibility
-     * This stores the enum as VARCHAR, not MySQL enum type
-     */
     @NotNull(message = "Role is required")
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 20) // ✅ Added length
+    @Column(nullable = false, length = 20)
     private UserRole role;
 
     @Column(nullable = false)
@@ -50,5 +54,44 @@ public class User {
         if (active == null) {
             active = true;
         }
+    }
+
+    // ============================================
+    // Spring Security UserDetails Implementation
+    // ============================================
+
+    @Override
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        return List.of(new SimpleGrantedAuthority("ROLE_" + role.name()));
+    }
+
+    @Override
+    public String getPassword() {
+        return password;
+    }
+
+    @Override
+    public String getUsername() {
+        return username;
+    }
+
+    @Override
+    public boolean isAccountNonExpired() {
+        return true;
+    }
+
+    @Override
+    public boolean isAccountNonLocked() {
+        return true;
+    }
+
+    @Override
+    public boolean isCredentialsNonExpired() {
+        return true;
+    }
+
+    @Override
+    public boolean isEnabled() {
+        return active;
     }
 }
